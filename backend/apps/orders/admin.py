@@ -1,0 +1,1 @@
+"""Future orders admin registrations."""

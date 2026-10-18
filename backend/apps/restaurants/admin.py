@@ -1,0 +1,1 @@
+"""Future restaurants admin registrations."""

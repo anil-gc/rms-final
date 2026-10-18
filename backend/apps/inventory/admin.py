@@ -1,0 +1,1 @@
+"""Future inventory admin registrations."""

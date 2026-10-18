@@ -1,0 +1,15 @@
+# Also protects local files if backend is used as a standalone checkout.
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage*
+htmlcov/
+*.sqlite3
+*.log
+staticfiles/
+media/

@@ -1,0 +1,1 @@
+"""Future kitchen admin registrations."""

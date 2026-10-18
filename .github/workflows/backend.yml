@@ -1,0 +1,81 @@
+name: Backend checks
+
+on:
+  push:
+    paths: ["backend/**", ".github/workflows/backend.yml"]
+  pull_request:
+    paths: ["backend/**", ".github/workflows/backend.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: rms_ci
+          POSTGRES_USER: rms_ci
+          # Disposable CI-only credential; never used outside this service.
+          POSTGRES_PASSWORD: ci-only-disposable-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U rms_ci -d rms_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.development
+      DJANGO_READ_DOT_ENV_FILE: "False"
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      DB_NAME: rms_ci
+      DB_USER: rms_ci
+      DB_PASSWORD: ci-only-disposable-password
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+      DB_SSLMODE: disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements/*.txt
+      - name: Generate ephemeral Django secret
+        run: |
+          python -c "import secrets; print('DJANGO_SECRET_KEY=' + secrets.token_urlsafe(64))" >> "$GITHUB_ENV"
+      - name: Install dependencies
+        run: python -m pip install -r requirements/development.txt
+      - name: Check dependency consistency
+        run: python -m pip check
+      - name: Lint
+        run: ruff check .
+      - name: Check formatting
+        run: ruff format --check .
+      - name: Django configuration checks
+        run: python manage.py check --database default
+      - name: Check migration drift
+        run: python manage.py makemigrations --check --dry-run
+      - name: Apply migrations
+        run: python manage.py migrate --noinput
+      - name: Verify no pending migrations
+        run: python manage.py migrate --check
+      - name: Tests against PostgreSQL
+        run: pytest -q
+      - name: Production settings deployment checks
+        env:
+          DJANGO_ALLOWED_HOSTS: api.example.test
+          DB_SSLMODE: require
+        run: python manage.py check --deploy --fail-level WARNING --settings=config.settings.production
+      - name: Collect production admin assets
+        env:
+          DJANGO_ALLOWED_HOSTS: api.example.test
+          DB_SSLMODE: require
+        run: python manage.py collectstatic --noinput --settings=config.settings.production
