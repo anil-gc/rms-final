@@ -1,9 +1,11 @@
-# RMS backend — Phase 1 foundation
+# RMS backend — foundation and accounts
 
 Python 3.12+, Django 5.2 LTS, Django REST Framework, and PostgreSQL. Python 3.12
 is the team's recommended baseline and the CI version. Frontend selection is
 deferred. No ordering, kitchen, POS, payment, inventory, or dashboard features
-are implemented. There are no registration, token, or API login workflows.
+are implemented. Phase 2 adds Owner password login, staff PIN login, secure
+sessions, Owner-only staff provisioning, and role permissions. There is no
+public registration or bearer-token/JWT issuance.
 
 ## Architecture
 
@@ -38,14 +40,15 @@ backend/
 ```
 
 Each app contains `__init__.py`, `apps.py`, `models.py`, `admin.py`, and a
-`migrations/` package. Only accounts has a model and initial migration. Core
-also contains operational views and URLs. Other modules are empty foundations.
+`migrations/` package. Accounts also contains credential services, serializers,
+views, permissions, login limits, and management commands. Core contains
+operational probes. Other modules remain empty foundations.
 
-| App | Responsibility when developed | Phase 1 content |
+| App | Responsibility when developed | Current content |
 | --- | --- | --- |
 | core | Small, genuinely shared infrastructure and operational probes | Health endpoints |
-| accounts | User identity and future account policies | `User(AbstractUser)` and standard Django admin |
-| restaurants | Restaurant profiles, branches, and future memberships | App skeleton |
+| accounts | Identity, credentials, and permissions | Role-aware User, sessions, PINs, rate limits, read-only account admin |
+| restaurants | Single restaurant profile and settings | App skeleton |
 | menu | Menu catalogue and availability | App skeleton |
 | orders | Orders, line items, and order lifecycle | App skeleton |
 | kitchen | Preparation and kitchen state | App skeleton |
@@ -58,17 +61,12 @@ when needed. Core must not become a container for unrelated business logic.
 Reference users with `settings.AUTH_USER_MODEL` in model relationships and
 `get_user_model()` in runtime code. Do not import Django's built-in User model.
 
-### Future multi-restaurant support
+### Single-location scope
 
-A later design phase should decide restaurant ownership, branches, membership,
-and access policy. A shared-schema design could put explicit restaurant foreign
-keys on business records, scope every queryset and write to an authorized
-restaurant, and use restaurant-scoped uniqueness constraints. Users can then
-belong to multiple restaurants through memberships instead of a single user
-restaurant field. Cross-restaurant isolation must be tested on API reads,
-writes, admin actions, tasks, and reports. Request-provided restaurant IDs alone
-must never grant access. No tenant schema, filtering, membership, roles, or
-restaurant models are implemented in this phase.
+The target is one restaurant at one location per deployment. Branches, tenancy,
+subscriptions, and memberships are outside the current roadmap. Module
+boundaries permit a separately approved future design without implementing
+those tables, identifiers, or request context now.
 
 ## Local setup
 
@@ -81,10 +79,12 @@ Set-Location backend
 python -m pip install -r requirements/development.txt
 Copy-Item .env.example .env
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-Put the generated value into `DJANGO_SECRET_KEY` in `.env`, enclosed in single
-quotes. Set a separate database password below. Both values are required;
+Put the first generated value into `DJANGO_SECRET_KEY` and the second into
+`DJANGO_PIN_PEPPER` in `.env`, enclosed in single quotes. Use separate values.
+Set a separate database password below. All three values are required;
 blank or missing values stop startup. Never paste secrets into a PR or commit.
 If activation is blocked, invoke `..\.venv\Scripts\python.exe` directly.
 
@@ -97,6 +97,7 @@ cd backend
 python -m pip install -r requirements/development.txt
 cp .env.example .env
 python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+python -c 'import secrets; print(secrets.token_urlsafe(48))'
 ```
 
 Pins in `requirements/` cover direct and transitive dependencies. Upgrade them
@@ -133,12 +134,16 @@ From `backend/` with the virtual environment active:
 ```powershell
 python manage.py check --database default
 python manage.py migrate
-python manage.py createsuperuser
+python manage.py bootstrap_owner --username owner
 python manage.py runserver 127.0.0.1:8000
 ```
 
-`createsuperuser` is optional for local admin access; no default account is
-created. Django's admin is at `http://127.0.0.1:8000/admin/`. This is a
+`bootstrap_owner` prompts for a password of at least 15 characters and refuses
+to overwrite existing accounts. It creates the single business Owner with
+read-only account admin access and no superuser flag. No default account is
+created. `createsuperuser` remains an operator recovery tool; unassigned
+superusers receive no business API role. Django's admin is at
+`http://127.0.0.1:8000/admin/`. This is a
 computer-local development address, not a public deployment.
 
 ## API and settings
@@ -148,18 +153,23 @@ computer-local development address, not a public deployment.
 | `GET /api/v1/health/` | Public liveness, no database query; `200 {"status":"ok","version":"v1"}` |
 | `GET /api/v1/health/ready/` | Public database readiness; `SELECT 1`, returns 200 or generic 503 |
 | `/admin/` | Built-in staff-only Django admin |
+| `/api/v1/accounts/` | Authentication and Owner-only staff management; see the API contract |
 
-No business endpoints, unversioned aliases, API login, or v2 routes exist.
+See [the authentication API contract](../docs/AUTHENTICATION.md) for all account
+routes, request bodies, role rules, and the React/Flutter cookie flow. No
+restaurant business endpoints, unversioned aliases, or v2 routes exist.
 Readiness confirms connectivity, not migration freshness; run `migrate --check`
 as part of release verification. Both probes support HEAD and OPTIONS and
 reject writes. Database exception details are omitted from responses and logs.
 
 `config.urls` owns the `/api/v1/` namespace. `config.api_urls` is the central
 registry for future app URLs. DRF uses `NamespaceVersioning`, JSON responses
-and request bodies, and `IsAuthenticated` by default. Only health probes
-explicitly allow anonymous access. The standard session authentication class
-is a foundation, not a selected React/Flutter authentication design. Browser
-credential sharing is disabled until that design is agreed and tested.
+and request bodies. Default permissions require an active, provisioned user
+whose temporary PIN has been changed. Only probes, CSRF bootstrap, and login
+explicitly allow anonymous access. Database-backed Django sessions and explicit
+CSRF checks protect authentication and writes. Browser credential sharing stays
+disabled unless `DJANGO_CORS_ALLOW_CREDENTIALS=True` is explicitly set together
+with enumerated trusted frontend origins.
 
 Settings:
 
@@ -185,6 +195,19 @@ Flutter native clients are not governed by browser CORS. The timezone is
 Console logs intentionally omit request bodies and credentials. Do not add
 private data to log messages.
 
+Keep `DJANGO_PIN_PEPPER` separate from the database and from the Django secret.
+PINs are HMAC-peppered then salted and hashed using Argon2; passwords also use
+Argon2. Existing Django PBKDF2 password hashes remain readable. Changing the
+pepper makes existing staff PINs unusable: coordinate Owner resets and back up
+the pepper securely. Owner recovery uses the trusted operator command
+`python manage.py changepassword owner`, which prompts without accepting a
+password argument. It revokes old sessions through Django's session hash.
+
+Schedule `python manage.py clearsessions` and
+`python manage.py purge_login_limits` daily. Login budgets use PostgreSQL row
+locks shared by all workers. They trust `REMOTE_ADDR`, never a client-supplied
+forwarded-IP header. Configure any trusted production proxy accordingly.
+
 ### Production configuration smoke checks
 
 Use a separate environment with `DJANGO_SETTINGS_MODULE=config.settings.production`,
@@ -209,8 +232,9 @@ Configure HTTPS termination before production use. Set
 `DJANGO_BEHIND_HTTPS_PROXY=True` only for a trusted proxy that strips incoming
 `X-Forwarded-Proto` and replaces it with the actual client scheme. Review the
 one-year HSTS policy, including subdomains/preload, before exposing the domain.
-Do not submit the domain to preload lists automatically. Admin login rate
-limiting/access restrictions, backups, monitoring, hosting, and deployment
+Do not submit the domain to preload lists automatically. Admin/API password
+login share failed-attempt protection. Network restrictions, backups,
+monitoring, hosting, and deployment
 hardening remain release work. This foundation is not a deployed product.
 
 ## Verification
@@ -232,9 +256,10 @@ Invoke-RestMethod http://127.0.0.1:8000/api/v1/health/ready/
 
 The last two commands require the development server to be running. On Unix,
 use `curl` instead of `Invoke-RestMethod`. Tests use PostgreSQL, not SQLite.
-They cover custom user persistence/admin registration, module configuration,
-secret validation, production security, API routing/versioning/permissions,
-database readiness failure, liveness independence, and browser CORS/preflight.
+They cover foundation configuration and probes plus Owner/staff authentication,
+CSRF, role enforcement, credential and session invalidation, migration
+preservation, and concurrent PostgreSQL login budgets. See
+[current verification evidence](../docs/PROJECT_STATUS.md).
 
 `.github/workflows/backend.yml` provides the same core checks on GitHub with
 an isolated PostgreSQL service, an ephemeral Django secret, and a clearly
@@ -243,8 +268,9 @@ static collection. No production credentials are stored in the workflow.
 
 ## Three-developer GitHub workflow
 
-This workspace was empty. Phase 1 is prepared on
-`feature/django-backend-boilerplate`, with `origin` pointing to
+This workspace was initially empty. Phase 2 is prepared on
+`feature/accounts-authentication`, based on the published Phase 1 branch, with
+`origin` pointing to
 `https://github.com/anil-gc/rms-final.git`. The separate prototype repository
 and its remote remain unchanged.
 
@@ -297,7 +323,7 @@ Add tests under `backend/tests/`, create migrations with
 
 ## Recommended next phase
 
-Review and merge this foundation first. Then design accounts, restaurant
-membership/ownership, authorization boundaries, and the frontend authentication
-contract with all three developers. Approve that design before implementing
-authentication or restaurant business features.
+Review Phase 2 first. After explicit approval, Phase 3 can add a single
+restaurant profile, menu catalogue, and tables. Do not add branches, tenancy,
+subscriptions, memberships, a frontend, or later-phase workflows. Publishing
+or merging also requires explicit approval.

@@ -26,3 +26,13 @@ def test_browser_preflight(api_client):
     assert response.status_code == 200
     assert response["Access-Control-Allow-Origin"] == "https://frontend.example.test"
     assert "GET" in response["Access-Control-Allow-Methods"]
+
+
+@override_settings(
+    CORS_ALLOWED_ORIGINS=["https://frontend.example.test"],
+    CORS_ALLOW_CREDENTIALS=True,
+)
+def test_cross_origin_cookie_support_requires_explicit_configuration(api_client):
+    response = api_client.get("/api/v1/accounts/csrf/", HTTP_ORIGIN="https://frontend.example.test")
+    assert response["Access-Control-Allow-Origin"] == "https://frontend.example.test"
+    assert response["Access-Control-Allow-Credentials"] == "true"
