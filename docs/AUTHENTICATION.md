@@ -1,8 +1,8 @@
 # Phase 2 authentication contract
 
 Base path: `/api/v1/accounts/`. JSON only. All credentials are strings. No
-public registration, Owner-creation endpoint, JWT, bearer-token, membership, or
-frontend implementation exists. Username identifies a staff account; a PIN
+public registration, Owner-creation endpoint, JWT, bearer-token, or membership
+endpoint exists. The React client uses this contract. Username identifies a staff account; a PIN
 alone is deliberately insufficient.
 
 ## Provisioning
@@ -46,8 +46,19 @@ For separate browser origins, explicitly set
 `DJANGO_CORS_ALLOW_CREDENTIALS=True`, `DJANGO_CORS_ALLOWED_ORIGINS`, and
 `DJANGO_CSRF_TRUSTED_ORIGINS` to trusted scheme/host/port values. Use the same
 site for frontend and API; SameSite=Lax intentionally remains enabled. Native
-Flutter is not subject to browser CORS. No frontend integration is claimed as
-tested in this phase.
+Flutter is not subject to browser CORS. The React frontend instead uses a
+same-origin Vite `/api` proxy in development. Add its exact origin to
+`DJANGO_CSRF_TRUSTED_ORIGINS`, for example `http://localhost:5173` (or
+`http://localhost:5174` when explicitly using that port). CORS credentials are
+not needed for this proxy arrangement. Use the frontend origin consistently
+in the browser; localhost and 127.0.0.1 have different cookie scopes.
+
+The React integration has been exercised against Django/PostgreSQL in a real
+browser, including login CSRF rotation, stale-CSRF rejection/manual recovery,
+Owner staff management, temporary/reset PIN enforcement, session revocation,
+role denial, refresh persistence, and logout. UI/API test details and local
+commands are in [frontend/README.md](../frontend/README.md). Backend account
+behavior and production cookie settings are unchanged.
 
 ## Endpoints
 

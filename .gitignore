@@ -17,3 +17,9 @@ media/
 .vscode/
 .DS_Store
 Thumbs.db
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+output/
+.playwright-cli/
