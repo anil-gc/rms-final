@@ -137,6 +137,20 @@ export function DashboardPage() {
           <span className="art-dot" />
         </div>
       </section>
+      <nav className="workspace-shortcuts" aria-label="Restaurant workspace">
+        <Link to="/restaurant">
+          <span>Restaurant profile</span>
+          <ArrowUpRight size={18} />
+        </Link>
+        <Link to="/menu">
+          <span>Menu catalogue</span>
+          <ArrowUpRight size={18} />
+        </Link>
+        <Link to="/tables">
+          <span>Tables & seating</span>
+          <ArrowUpRight size={18} />
+        </Link>
+      </nav>
       <section className="stats-grid" aria-label="Workspace summary">
         {stats.map(({ label, value, hint, icon: Icon, tone }) => (
           <article className="stat-card" key={label}>

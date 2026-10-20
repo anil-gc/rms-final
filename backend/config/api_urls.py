@@ -6,4 +6,6 @@ app_name = "api"
 urlpatterns = [
     path("", include("apps.core.urls")),
     path("accounts/", include("apps.accounts.urls")),
+    path("", include("apps.restaurants.urls")),
+    path("menu/", include("apps.menu.urls")),
 ]

@@ -60,6 +60,12 @@ role denial, refresh persistence, and logout. UI/API test details and local
 commands are in [frontend/README.md](../frontend/README.md). Backend account
 behavior and production cookie settings are unchanged.
 
+Phase 3 extends the same session and CSRF contract to restaurant, menu, and
+table APIs. Owner/Manager may manage workspace records; other provisioned
+users have read-only access. Temporary-PIN sessions are denied all Phase 3
+endpoints, including logo delivery. No new authentication workflow or token
+type was introduced. See [the Phase 3 contract](PHASE_3.md).
+
 ## Endpoints
 
 | Method and relative path | Body | Access/result |

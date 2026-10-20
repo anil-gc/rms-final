@@ -8,6 +8,9 @@ import { LoginPage } from "./pages/LoginPage";
 import { StaffPage } from "./pages/StaffPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { TemporaryPinPage } from "./pages/TemporaryPinPage";
+import { RestaurantPage } from "./pages/RestaurantPage";
+import { MenuPage } from "./pages/MenuPage";
+import { TablesPage } from "./pages/TablesPage";
 
 export function AppRoutes() {
   return (
@@ -28,6 +31,9 @@ export function AppRoutes() {
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/restaurant" element={<RestaurantPage />} />
+          <Route path="/menu" element={<MenuPage />} />
+          <Route path="/tables" element={<TablesPage />} />
           <Route element={<ProtectedRoute ownerOnly />}>
             <Route path="/staff" element={<StaffPage />} />
           </Route>

@@ -45,7 +45,7 @@ export function LoginPage({ kind }: { kind: "owner" | "staff" }) {
           ? location.state.from
           : undefined;
       const allowed =
-        target === "/profile" ||
+        ["/profile", "/restaurant", "/menu", "/tables"].includes(target) ||
         (target === "/staff" && profile.role === "owner")
           ? target
           : "/";

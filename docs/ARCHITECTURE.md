@@ -1,18 +1,18 @@
 # Architecture
 
-Current scope: accounts and authentication for a single restaurant operating
-from one location in Nepal, with a React client for those existing APIs.
-Phase 1 is complete. All later business modules remain empty app boundaries.
+Current scope: accounts, authentication, a single restaurant profile, menu
+catalogue, and physical tables for one location in Nepal, with a React client.
+Orders, kitchen, billing, and inventory remain empty app boundaries.
 
 ## Module boundaries
 
 | Module | Responsibility | Implemented |
 | --- | --- | --- |
 | `config` | Environment-specific settings and central v1 routing | Yes |
-| `core` | Operational liveness/readiness | Yes |
+| `core` | Operational probes and shared authenticated API behavior | Yes |
 | `accounts` | Users, credentials, sessions, account access rules | Yes |
-| `restaurants` | Single restaurant profile/settings; tables in Phase 3 | Skeleton |
-| `menu` | Categories, prices, availability in Phase 3 | Skeleton |
+| `restaurants` | Singleton profile, bounded logo uploads, physical tables/occupancy | Phase 3 |
+| `menu` | Categories, decimal prices, availability, archiving | Phase 3 |
 | `orders` | Table orders and cashier approval in Phase 4 | Skeleton |
 | `kitchen` | One Chef's preparation/ready status in Phase 5 | Skeleton |
 | `billing` | Invoices, payment records, cashier printing in Phase 6 | Skeleton |
@@ -113,11 +113,13 @@ they require a separate approved architecture rather than dormant tables now.
 
 `frontend/` is an independent React/TypeScript application built with Vite,
 Tailwind CSS, and React Router. `src/lib/api.ts` centralizes the existing
-`/api/v1/accounts/` contract. `src/auth/` owns session discovery, role guards,
+`/api/v1/` transport, with account methods and `src/lib/workspace.ts` for
+Phase 3 contracts. `src/auth/` owns session discovery, role guards,
 and temporary-PIN routing. `src/pages/` contains login, overview, staff,
-profile, and required-PIN screens; `src/components/` supplies shared controls,
+profile, required-PIN, restaurant, menu, and table screens; `src/components/` supplies shared controls,
 dialogs, and responsive navigation. Hooks coordinate mutations, cooldowns,
-and staff reads. No business API or backend schema was added.
+and workspace reads. Phase 3 adds domain tables without changing the account
+models, authentication backend, credential lifecycle, or existing migrations.
 
 The server remains the authority for permissions. Route guards prevent
 accidental navigation, while every API operation uses Django's existing
@@ -139,3 +141,46 @@ proxy. Django must trust the exact browser origin for CSRF (the Origin header
 is retained). Production should serve the built SPA with history fallback
 and reverse-proxy `/api/` to Django on the same origin; Vite is not the
 production application server. See [frontend setup](../frontend/README.md).
+
+## Phase 3 domain boundaries
+
+`restaurants.Restaurant` uses a fixed primary key and database check constraint
+to permit exactly one configured profile. Setup uses an INSERT, so repeated
+or racing setup requests cannot overwrite existing data. It can be inactive
+without locking administrators out of sign-in or profile editing. Currency
+is constrained to NPR; daily hours use Nepal local time and can cross midnight.
+No profile is seeded automatically and no user membership/restaurant key was added.
+
+`restaurants.DiningTable` belongs to that profile. Capacity is 1–50, and manual
+occupancy is available/occupied. An inactive table must be available. There are
+no reservations, orders, locks tied to orders, or automatic occupancy transitions.
+
+`menu.Category` belongs to the profile; `menu.MenuItem` belongs to a category.
+Foreign keys use PROTECT. Names are case-insensitively unique (items within
+their category); archival retains names and identifiers. Prices are positive,
+bounded two-place decimals. Effective availability combines item active/
+available, category active, and restaurant active, without rewriting any price.
+
+All provisioned users with completed PIN changes can read the workspace.
+Owner and Manager can create/edit/archive records and manage the logo. Other
+staff only receive active tables/categories/items; unavailable active items
+remain visible, and an archived category hides its items. There is no hard
+delete API for domain records. Account staff management remains Owner-only.
+Workspace mutations preserve the existing cookie/CSRF enforcement and use
+row locks for updates; database constraints reject conflicting writes. Form
+edits use the latest submitted values; collaborative draft merging/live updates
+are not implemented. Refresh to read another administrator's changes.
+
+`core/api.py` supplies strict model input, no-store responses, read/write role
+selection, and common list/create/retrieve/PATCH behavior. App serializers own
+field validation; model constraints enforce stored invariants. The small
+restaurant service enforces the setup prerequisite for categories and tables.
+Domain admin registrations are read-only so validation is not duplicated in
+an alternative writable admin path.
+
+Logo uploads use a dedicated multipart endpoint, leaving authentication JSON
+parsers unchanged. A 2 MB / 2048px bound and raster decode/re-encode accept PNG,
+JPEG, or WebP and store generated PNG names with metadata stripped. Delivery
+uses the protected API, not a public media URL. Replaced files are deleted
+after commit. Persistent shared media storage and edge request limits are
+deployment concerns for a later approved phase. See [the API contract](PHASE_3.md).
