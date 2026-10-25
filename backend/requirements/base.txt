@@ -13,3 +13,4 @@ argon2-cffi==25.1.0
 argon2-cffi-bindings==26.1.0
 cffi==2.1.1
 pycparser==3.11
+Pillow==13.0.0

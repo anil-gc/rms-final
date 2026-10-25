@@ -9,7 +9,7 @@ multi-tenancy, subscriptions, or membership features are included.
 | 1 | Modular Django foundation, PostgreSQL, settings, v1 API, health, lint/tests | Complete and verified |
 | 2 | Roles, Owner provisioning, staff PINs, secure sessions, rate limits, backend permissions | Complete, verified, and published on its feature branch |
 | Frontend integration | React login, account overview, Owner staff management, required PIN change, profile/logout | Complete and verified; feature branch for PR review |
-| 3 | Single restaurant profile/settings, menu categories/items/prices/availability, tables/occupancy | Not started; requires approval |
+| 3 | Single restaurant profile/settings, menu categories/items/prices/availability, tables/occupancy | Complete and verified; publication authorized for stacked PR review |
 | 4 | Waiter orders, table association, cashier approval for new/additional items, cancellations, transactional lifecycle | Not started |
 | 5 | Single Chef display, approved items only, preparing/ready per item, waiter status, served tracking | Not started |
 | 6 | Consolidated table bill, totals/discount/tax, payments, unique numbers, 80mm printing, PDFs, reprinting | Not started |

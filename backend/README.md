@@ -1,11 +1,16 @@
-# RMS backend — foundation and accounts
+# RMS backend — foundation, accounts, and restaurant workspace
 
 Python 3.12+, Django 5.2 LTS, Django REST Framework, and PostgreSQL. Python 3.12
-is the team's recommended baseline and the CI version. Frontend selection is
-deferred. No ordering, kitchen, POS, payment, inventory, or dashboard features
+is the team's recommended baseline and the CI version. The frontend uses
+React, Vite, TypeScript, and Tailwind CSS. No ordering, kitchen, POS, payment, inventory, or business dashboard features
 are implemented. Phase 2 adds Owner password login, staff PIN login, secure
 sessions, Owner-only staff provisioning, and role permissions. There is no
 public registration or bearer-token/JWT issuance.
+
+Phase 3 adds the singleton restaurant profile, validated logo upload/delivery,
+menu categories/items with decimal NPR pricing and availability, and physical
+tables with manual occupancy. Owner/Manager manage these records; other ready
+staff have read-only access. See [the Phase 3 API contract](../docs/PHASE_3.md).
 
 ## Architecture
 
@@ -42,14 +47,16 @@ backend/
 Each app contains `__init__.py`, `apps.py`, `models.py`, `admin.py`, and a
 `migrations/` package. Accounts also contains credential services, serializers,
 views, permissions, login limits, and management commands. Core contains
-operational probes. Other modules remain empty foundations.
+operational probes and shared authenticated API behavior. Restaurants and menu
+contain Phase 3 models, serializers, routes, read-only admin, and migrations.
+Orders, kitchen, billing, and inventory remain empty foundations.
 
 | App | Responsibility when developed | Current content |
 | --- | --- | --- |
 | core | Small, genuinely shared infrastructure and operational probes | Health endpoints |
 | accounts | Identity, credentials, and permissions | Role-aware User, sessions, PINs, rate limits, read-only account admin |
-| restaurants | Single restaurant profile and settings | App skeleton |
-| menu | Menu catalogue and availability | App skeleton |
+| restaurants | Single restaurant profile and physical tables | Profile/logo and table/occupancy APIs |
+| menu | Menu catalogue and availability | Categories, decimal prices, availability and archiving |
 | orders | Orders, line items, and order lifecycle | App skeleton |
 | kitchen | Preparation and kitchen state | App skeleton |
 | billing | Invoices, taxes, and payment records | App skeleton |

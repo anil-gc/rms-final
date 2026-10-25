@@ -9,6 +9,9 @@ import {
   ShieldCheck,
   UserRound,
   UsersRound,
+  Store,
+  Utensils,
+  Armchair,
 } from "lucide-react";
 import { useAuth } from "../auth/auth-context";
 import { displayName, roleLabel } from "../types";
@@ -19,6 +22,9 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuth();
   const links = [
     { to: "/", label: "Overview", icon: LayoutDashboard },
+    { to: "/restaurant", label: "Restaurant profile", icon: Store },
+    { to: "/menu", label: "Menu catalogue", icon: Utensils },
+    { to: "/tables", label: "Tables", icon: Armchair },
     ...(user?.role === "owner"
       ? [{ to: "/staff", label: "Staff management", icon: UsersRound }]
       : []),
@@ -57,7 +63,13 @@ export function AppLayout() {
     ? "Staff management"
     : location.pathname === "/profile"
       ? "My profile"
-      : "Overview";
+      : location.pathname === "/restaurant"
+        ? "Restaurant profile"
+        : location.pathname === "/menu"
+          ? "Menu catalogue"
+          : location.pathname === "/tables"
+            ? "Tables"
+            : "Overview";
   const date = new Intl.DateTimeFormat("en-GB", {
     day: "numeric",
     month: "short",

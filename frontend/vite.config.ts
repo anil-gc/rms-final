@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig(({ mode }) => {
+  // The local proxy target can be overridden without changing the shared default.
   const env = loadEnv(mode, process.cwd(), "");
   return {
     plugins: [react(), tailwindcss()],
