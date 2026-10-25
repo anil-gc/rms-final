@@ -47,7 +47,7 @@ function makeError(response: Response, payload: unknown) {
     400: "Please check the highlighted details.",
     401: "The credentials could not be verified.",
     403: "Your session or access may have changed. Please try again.",
-    404: "This account could not be found. Refresh the team list.",
+    404: "The requested record could not be found. Refresh and try again.",
     429: "Too many attempts. Please wait before trying again.",
   };
   let message =
@@ -69,9 +69,13 @@ function makeError(response: Response, payload: unknown) {
   return new ApiError(message, response.status, fields, retryAfter);
 }
 
-async function fetchApi(path: string, init: RequestInit = {}) {
+async function fetchApi(
+  path: string,
+  init: RequestInit = {},
+  prefix = "accounts/",
+) {
   try {
-    return await fetch(`/api/v1/accounts/${path}`, {
+    return await fetch(`/api/v1/${prefix}${path}`, {
       ...init,
       credentials: "include",
       cache: "no-store",
@@ -116,17 +120,25 @@ async function request<T>(
   method = "GET",
   data?: unknown,
   notify = true,
+  prefix = "accounts/",
 ): Promise<T> {
   const headers: Record<string, string> = { Accept: "application/json" };
   if (method !== "GET") {
     headers["X-CSRFToken"] = await ensureCsrf();
-    headers["Content-Type"] = "application/json";
+    if (!(data instanceof FormData))
+      headers["Content-Type"] = "application/json";
   }
-  const response = await fetchApi(path, {
-    method,
-    headers,
-    ...(data === undefined ? {} : { body: JSON.stringify(data) }),
-  });
+  const response = await fetchApi(
+    path,
+    {
+      method,
+      headers,
+      ...(data === undefined
+        ? {}
+        : { body: data instanceof FormData ? data : JSON.stringify(data) }),
+    },
+    prefix,
+  );
   const body = await readBody(response);
   if (!response.ok) {
     const error = makeError(response, body);
@@ -174,3 +186,12 @@ export const api = {
       new_password,
     }),
 };
+
+// Workspace modules share the existing session/CSRF transport, including uploads.
+export function workspaceRequest<T>(
+  path: string,
+  method = "GET",
+  data?: unknown,
+): Promise<T> {
+  return request<T>(path, method, data, true, "");
+}

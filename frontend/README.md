@@ -1,8 +1,8 @@
 # RMS React frontend
 
 React + TypeScript + Vite, Tailwind CSS, and React Router. This client implements
-only the existing accounts/authentication APIs. It contains no restaurant,
-menu, orders, kitchen, billing, or inventory workflows.
+accounts/authentication and Phase 3 restaurant profile, menu catalogue, and
+table management. Orders, kitchen, billing, and inventory remain future work.
 
 ## Setup
 
@@ -50,11 +50,26 @@ npm run dev -- --port 5174
 ```
 
 The current verified local preview uses **http://localhost:5174/** because
-5173 belongs to another application. The backend runs on port 8000 against an
+5173 belongs to another application. The Phase 3 backend runs on port **8002** against an
 isolated local PostgreSQL database, `rms_frontend_development`, on port 55440.
 Its generated preview credentials are in the ignored local file
 `../.local/preview-credentials.txt`. This is development data, separate from
 the prototype and any shared restaurant database. It is not a deployed site.
+
+The previous non-reloading Django preview on 8000 is preserved. The ignored
+`frontend/.env.local` currently sets `DEV_BACKEND_URL=http://127.0.0.1:8002`.
+To start this Phase 3 backend from a separate repository-root terminal:
+
+```powershell
+cd backend
+..\.venv\Scripts\python.exe -m pip install -r requirements/development.txt
+..\.venv\Scripts\python.exe manage.py migrate
+..\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8002 --noreload
+```
+
+Readiness: `http://127.0.0.1:8002/api/v1/health/ready/`. The shared default proxy
+target remains 8000 for other developers; use `.env.local` to select another
+local backend. Do not start a second process if that port is already running.
 
 After a computer restart, this preview's dedicated PostgreSQL cluster may
 need starting before Django. From the repository root, using the installed
@@ -92,12 +107,13 @@ server's Retry-After period. Logout waits for server confirmation.
 src/
   auth/          Session provider/context and protected routes
   components/    Shared controls, native dialogs, responsive layout
-  hooks/         Mutation/cooldown and staff-list state
-  lib/           Central accounts API client
-  pages/         Login, overview, staff, profile, required PIN change
+  hooks/         Mutation/cooldown, staff-list and workspace resource state
+  lib/           Shared session/CSRF API transport and typed workspace API methods
+  pages/         Accounts, restaurant profile, menu catalogue, and table screens
   test/          Shared test setup
   App.tsx        Route tree
   styles.css     Tailwind theme and responsive application styles
+  workspace.css  Phase 3 workspace layouts
   types.ts       Account/role contracts
 ```
 
@@ -119,6 +135,15 @@ Dashboard counts come from real staff records; a failed request shows an
 unavailable/error state rather than invented zero values. Staff only see
 their own identity and permitted navigation. Backend permissions remain
 authoritative; required PIN sessions cannot enter normal protected screens.
+
+Phase 3 adds `/restaurant`, `/menu`, and `/tables`, all inside the same protected
+route boundary. Owner/Manager can manage records; other provisioned users see
+read-only active records. The screens use `/api/v1/restaurant/`,
+`/api/v1/restaurant/logo/`, `/api/v1/menu/categories/`, `/api/v1/menu/items/`, and
+`/api/v1/tables/`. The logo uses multipart through the same CSRF/cookie transport.
+Create the restaurant profile first, then categories/items and tables. Empty
+states do not create sample data. Archive/reactivate through edit dialogs;
+tables must be available before archiving. See [the full Phase 3 contract](../docs/PHASE_3.md).
 
 ## Verification and production boundary
 
@@ -149,7 +174,8 @@ production security settings. `npm run preview` serves the compiled assets
 on 4173 for visual inspection; it has no API proxy configured. Production
 hosting, TLS, and deployment are not included or verified in this work.
 
-Review changes on `feature/react-frontend`. Do not commit secrets, `.env`,
-dependencies, build output, browser state, or `.local/`. The owner has authorized
-publication as a PR targeting `feature/accounts-authentication`; merging and
-Phase 3 work require separate approval.
+Review Phase 3 changes on `feature/restaurant-menu-tables`, based on the completed
+frontend branch. Do not commit secrets, `.env`,
+dependencies, build output, browser state, or `.local/`. Phase 3 publication is
+authorized as a stacked PR targeting `feature/react-frontend`. Merging and
+Phase 4 work require separate approval.
