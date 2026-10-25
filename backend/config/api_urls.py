@@ -3,4 +3,7 @@
 from django.urls import include, path
 
 app_name = "api"
-urlpatterns = [path("", include("apps.core.urls"))]
+urlpatterns = [
+    path("", include("apps.core.urls")),
+    path("accounts/", include("apps.accounts.urls")),
+]

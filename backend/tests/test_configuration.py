@@ -23,6 +23,7 @@ def load_settings(module, overrides=None, missing=()):
     process_env.update(
         DJANGO_READ_DOT_ENV_FILE="False",
         DJANGO_SECRET_KEY=secrets.token_urlsafe(64),
+        DJANGO_PIN_PEPPER=secrets.token_urlsafe(48),
         DJANGO_ALLOWED_HOSTS="api.example.test",
         DB_PASSWORD=secrets.token_urlsafe(32),
     )
@@ -41,6 +42,7 @@ print(json.dumps({{
     "https_redirect": getattr(s, "SECURE_SSL_REDIRECT", False),
     "proxy_header": getattr(s, "SECURE_PROXY_SSL_HEADER", None),
     "cors": s.CORS_ALLOWED_ORIGINS,
+    "cors_credentials": s.CORS_ALLOW_CREDENTIALS,
     "csrf": s.CSRF_TRUSTED_ORIGINS,
     "database_name": s.DATABASES["default"]["NAME"],
     "database_port": s.DATABASES["default"]["PORT"],
@@ -95,7 +97,9 @@ def test_api_defaults_require_authenticated_access():
 
 def test_cors_defaults_do_not_allow_every_origin():
     assert settings.CORS_ALLOW_ALL_ORIGINS is False
-    assert settings.CORS_ALLOW_CREDENTIALS is False
+    result = load_settings("config.settings.development")
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["cors_credentials"] is False
 
 
 def test_production_enforces_security_even_if_debug_env_is_true():
@@ -118,6 +122,7 @@ def test_environment_values_are_parsed():
             "DB_NAME": "isolated_configuration_test",
             "DB_PORT": "55439",
             "DJANGO_CORS_ALLOWED_ORIGINS": "https://frontend.example.test",
+            "DJANGO_CORS_ALLOW_CREDENTIALS": "True",
             "DJANGO_CSRF_TRUSTED_ORIGINS": "https://frontend.example.test",
         },
     )
@@ -127,6 +132,7 @@ def test_environment_values_are_parsed():
     assert config["database_name"] == "isolated_configuration_test"
     assert config["database_port"] == 55439
     assert config["cors"] == ["https://frontend.example.test"]
+    assert config["cors_credentials"] is True
     assert config["csrf"] == ["https://frontend.example.test"]
 
 
@@ -136,7 +142,7 @@ def test_proxy_trust_requires_explicit_opt_in():
     assert json.loads(result.stdout)["proxy_header"] == ["HTTP_X_FORWARDED_PROTO", "https"]
 
 
-@pytest.mark.parametrize("variable", ["DJANGO_SECRET_KEY", "DB_PASSWORD"])
+@pytest.mark.parametrize("variable", ["DJANGO_SECRET_KEY", "DJANGO_PIN_PEPPER", "DB_PASSWORD"])
 @pytest.mark.parametrize("missing", [True, False])
 def test_required_secrets_fail_closed(variable, missing):
     overrides = {} if missing else {variable: ""}
@@ -156,6 +162,8 @@ def test_required_secrets_fail_closed(variable, missing):
         ({"DJANGO_SECRET_KEY": "placeholder"}, "DJANGO_SECRET_KEY"),
         ({"DB_SSLMODE": "disable"}, "DB_SSLMODE"),
         ({"DB_SSLMODE": "prefer"}, "DB_SSLMODE"),
+        ({"DJANGO_PIN_PEPPER": "short"}, "DJANGO_PIN_PEPPER"),
+        ({"DJANGO_PIN_PEPPER": "x" * 48}, "DJANGO_PIN_PEPPER"),
     ],
 )
 def test_production_rejects_unsafe_configuration(overrides, expected):
