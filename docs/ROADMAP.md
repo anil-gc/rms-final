@@ -1,13 +1,14 @@
 # Development roadmap
 
 Target: a small restaurant with a single location. Backend: Django/DRF and
-PostgreSQL. Frontend undecided; build REST APIs independently. No branches,
+PostgreSQL. Frontend: React, Vite, and Tailwind CSS, using existing REST APIs. No branches,
 multi-tenancy, subscriptions, or membership features are included.
 
 | Phase | Scope | State |
 | --- | --- | --- |
 | 1 | Modular Django foundation, PostgreSQL, settings, v1 API, health, lint/tests | Complete and verified |
-| 2 | Roles, Owner provisioning, staff PINs, secure sessions, rate limits, backend permissions | Complete and verified; awaiting approval |
+| 2 | Roles, Owner provisioning, staff PINs, secure sessions, rate limits, backend permissions | Complete, verified, and published on its feature branch |
+| Frontend integration | React login, account overview, Owner staff management, required PIN change, profile/logout | Complete and verified; feature branch for PR review |
 | 3 | Single restaurant profile/settings, menu categories/items/prices/availability, tables/occupancy | Not started; requires approval |
 | 4 | Waiter orders, table association, cashier approval for new/additional items, cancellations, transactional lifecycle | Not started |
 | 5 | Single Chef display, approved items only, preparing/ready per item, waiter status, served tracking | Not started |

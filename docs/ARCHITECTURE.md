@@ -1,8 +1,8 @@
 # Architecture
 
-Current scope: Phase 2, accounts and authentication for a single restaurant
-operating from one location in Nepal. Phase 1 is complete. All later business
-modules remain empty app boundaries. No frontend is selected or implemented.
+Current scope: accounts and authentication for a single restaurant operating
+from one location in Nepal, with a React client for those existing APIs.
+Phase 1 is complete. All later business modules remain empty app boundaries.
 
 ## Module boundaries
 
@@ -91,7 +91,7 @@ excludes both credential hashes, preventing a second staff-creation path.
 ## Security and deployment boundaries
 
 The API contract is cookie/session based for both React and Flutter. There is
-no token issuance or frontend. Production requires HTTPS, secure cookies,
+no token issuance. Production requires HTTPS, secure cookies,
 explicit hosts, strong separate secrets, and PostgreSQL TLS. SameSite=Lax is
 retained; plan same-site frontend/API hosting. Browser cross-origin cookie use
 requires explicit CORS credentials and origins. Do not trust arbitrary
@@ -108,3 +108,34 @@ uses a dedicated PostgreSQL cluster and generated test credentials.
 Future extensibility comes from app boundaries and explicit permissions.
 Multiple branches, tenancy, subscriptions, and memberships are out of scope;
 they require a separate approved architecture rather than dormant tables now.
+
+## React frontend
+
+`frontend/` is an independent React/TypeScript application built with Vite,
+Tailwind CSS, and React Router. `src/lib/api.ts` centralizes the existing
+`/api/v1/accounts/` contract. `src/auth/` owns session discovery, role guards,
+and temporary-PIN routing. `src/pages/` contains login, overview, staff,
+profile, and required-PIN screens; `src/components/` supplies shared controls,
+dialogs, and responsive navigation. Hooks coordinate mutations, cooldowns,
+and staff reads. No business API or backend schema was added.
+
+The server remains the authority for permissions. Route guards prevent
+accidental navigation, while every API operation uses Django's existing
+session/CSRF enforcement. A 403 triggers an identity recheck rather than an
+assumption that a role/CSRF denial means logout. Network failures have a
+reconnect state. An in-memory request revision prevents an older identity
+response from replacing a newer login/logout result. Session checks run on
+focus, visibility, and a one-minute interval; BroadcastChannel announces
+changes across tabs without sending credentials.
+
+PINs/passwords exist only in submitted form state and are cleared after API
+attempts. The masked CSRF token stays in memory, including its rotated value
+after login. Neither localStorage nor sessionStorage is used. Mutations are
+never automatically replayed after CSRF or network errors. A required PIN
+change allows only identity, PIN change, and logout in the client and backend.
+
+During development the browser calls relative `/api` paths through Vite's
+proxy. Django must trust the exact browser origin for CSRF (the Origin header
+is retained). Production should serve the built SPA with history fallback
+and reverse-proxy `/api/` to Django on the same origin; Vite is not the
+production application server. See [frontend setup](../frontend/README.md).
