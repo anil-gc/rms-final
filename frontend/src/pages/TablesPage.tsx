@@ -72,6 +72,7 @@ function TableDialog({
           <select
             id="table-status"
             className="input"
+            disabled={table?.has_active_session}
             value={form.status}
             aria-describedby={
               action.error?.fields.status ? "table-status-error" : undefined
@@ -93,12 +94,15 @@ function TableDialog({
             </span>
           )}
           <span className="field-hint">
-            Updated manually by your Owner or Manager.
+            {table?.has_active_session
+              ? "An active dining session keeps this table occupied until the visit is closed."
+              : "Updated manually by your Owner or Manager."}
           </span>
         </div>
         <Toggle
           label="Table active"
           checked={form.is_active}
+          disabled={table?.has_active_session}
           onChange={(value) => setForm({ ...form, is_active: value })}
           hint="Mark a table available before archiving it. Archived tables are hidden from staff."
         />
@@ -309,8 +313,8 @@ export function TablesPage() {
           )}
           <p className="workspace-note">
             <Armchair size={17} />
-            Keep occupancy current for your team. Your Owner or Manager updates
-            these statuses.
+            Dining sessions keep tables occupied. Manual occupancy changes are
+            available to your Owner or Manager when no active session exists.
           </p>
         </>
       )}

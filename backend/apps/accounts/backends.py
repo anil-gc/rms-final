@@ -23,7 +23,9 @@ class AccountBackend(ModelBackend):
             request._rms_login_wait = None
         address = request.META.get("REMOTE_ADDR", "unknown") if request is not None else "internal"
         try:
-            account_key = consume_credential_attempt(username, address)
+            account_key = consume_credential_attempt(
+                username, address, pin=credential_type == "pin"
+            )
         except LoginRateLimited as error:
             if request is not None:
                 request._rms_login_wait = error.wait

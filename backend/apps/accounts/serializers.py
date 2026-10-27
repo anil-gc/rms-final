@@ -31,7 +31,7 @@ class PINField(serializers.CharField):
 
 class NewPINField(PINField):
     def __init__(self, **kwargs):
-        super().__init__(max_length=6, min_length=6, **kwargs)
+        super().__init__(max_length=4, min_length=4, **kwargs)
 
     def run_validation(self, data=serializers.empty):
         value = super().run_validation(data)

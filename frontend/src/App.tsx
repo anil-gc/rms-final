@@ -11,6 +11,9 @@ import { TemporaryPinPage } from "./pages/TemporaryPinPage";
 import { RestaurantPage } from "./pages/RestaurantPage";
 import { MenuPage } from "./pages/MenuPage";
 import { TablesPage } from "./pages/TablesPage";
+import { WaiterOrdersPage } from "./features/orders/WaiterOrdersPage";
+import { CashierOrdersPage } from "./features/orders/CashierOrdersPage";
+import { OrdersAccess } from "./features/orders/OrdersAccess";
 
 export function AppRoutes() {
   return (
@@ -34,6 +37,12 @@ export function AppRoutes() {
           <Route path="/restaurant" element={<RestaurantPage />} />
           <Route path="/menu" element={<MenuPage />} />
           <Route path="/tables" element={<TablesPage />} />
+          <Route element={<OrdersAccess role="waiter" />}>
+            <Route path="/orders/waiter" element={<WaiterOrdersPage />} />
+          </Route>
+          <Route element={<OrdersAccess role="cashier" />}>
+            <Route path="/orders/cashier" element={<CashierOrdersPage />} />
+          </Route>
           <Route element={<ProtectedRoute ownerOnly />}>
             <Route path="/staff" element={<StaffPage />} />
           </Route>

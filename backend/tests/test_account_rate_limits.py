@@ -22,7 +22,9 @@ PREFIX = "/api/v1/accounts/"
 @pytest.mark.django_db
 def test_account_failed_login_budget_is_shared_across_client_ips(staff, session_client):
     client = session_client()
-    for attempt in range(settings.ACCOUNTS_LOGIN_ACCOUNT_LIMIT):
+    for attempt in range(
+        min(settings.ACCOUNTS_LOGIN_ACCOUNT_LIMIT, settings.ACCOUNTS_PIN_ACCOUNT_LIMIT)
+    ):
         response = client.post(
             PREFIX + "login/staff/",
             {
@@ -37,7 +39,7 @@ def test_account_failed_login_budget_is_shared_across_client_ips(staff, session_
         PREFIX + "login/staff/",
         {
             "username": staff.username,
-            "pin": "482759",
+            "pin": "4827",
         },
         format="json",
         REMOTE_ADDR="198.51.100.1",
@@ -58,7 +60,7 @@ def test_ip_budget_ignores_spoofed_forwarded_headers(session_client):
             PREFIX + "login/staff/",
             {
                 "username": f"unknown-{index}",
-                "pin": "482759",
+                "pin": "4827",
             },
             format="json",
             REMOTE_ADDR="192.0.2.50",
@@ -77,7 +79,7 @@ def test_success_refunds_only_the_account_attempt(staff, session_client):
                 PREFIX + "login/staff/",
                 {
                     "username": staff.username,
-                    "pin": "482759",
+                    "pin": "4827",
                 },
                 format="json",
             ).status_code
@@ -89,7 +91,7 @@ def test_success_refunds_only_the_account_attempt(staff, session_client):
             PREFIX + "login/staff/",
             {
                 "username": staff.username,
-                "pin": "482759",
+                "pin": "4827",
             },
             format="json",
         ).status_code
@@ -99,7 +101,7 @@ def test_success_refunds_only_the_account_attempt(staff, session_client):
 
 @pytest.mark.django_db
 def test_expired_failure_window_allows_login_again(staff, session_client):
-    for _ in range(settings.ACCOUNTS_LOGIN_ACCOUNT_LIMIT):
+    for _ in range(min(settings.ACCOUNTS_LOGIN_ACCOUNT_LIMIT, settings.ACCOUNTS_PIN_ACCOUNT_LIMIT)):
         consume_credential_attempt(staff.username, "192.0.2.1")
     LoginRateLimit.objects.update(window_started=timezone.now() - timedelta(hours=1))
     client = session_client()
@@ -108,7 +110,7 @@ def test_expired_failure_window_allows_login_again(staff, session_client):
             PREFIX + "login/staff/",
             {
                 "username": staff.username,
-                "pin": "482759",
+                "pin": "4827",
             },
             format="json",
         ).status_code
@@ -129,13 +131,13 @@ def test_success_does_not_refund_an_attempt_in_a_new_window():
 @pytest.mark.django_db
 def test_pin_change_current_credential_is_rate_limited(staff, session_client):
     client = session_client(staff)
-    for _ in range(settings.ACCOUNTS_LOGIN_ACCOUNT_LIMIT):
+    for _ in range(min(settings.ACCOUNTS_LOGIN_ACCOUNT_LIMIT, settings.ACCOUNTS_PIN_ACCOUNT_LIMIT)):
         assert (
             client.post(
                 PREFIX + "pin/change/",
                 {
                     "current_pin": "incorrect",
-                    "new_pin": "739284",
+                    "new_pin": "7392",
                 },
                 format="json",
             ).status_code
@@ -145,8 +147,8 @@ def test_pin_change_current_credential_is_rate_limited(staff, session_client):
         client.post(
             PREFIX + "pin/change/",
             {
-                "current_pin": "482759",
-                "new_pin": "739284",
+                "current_pin": "4827",
+                "new_pin": "7392",
             },
             format="json",
         ).status_code

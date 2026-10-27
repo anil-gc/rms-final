@@ -50,8 +50,12 @@ export interface DiningTable {
   status: "available" | "occupied";
   is_active: boolean;
   updated_at: string;
+  has_active_session?: boolean;
 }
-export type TableInput = Omit<DiningTable, "id" | "updated_at">;
+export type TableInput = Omit<
+  DiningTable,
+  "id" | "updated_at" | "has_active_session"
+>;
 
 export const canManageWorkspace = (role?: string) =>
   role === "owner" || role === "manager";
