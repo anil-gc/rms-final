@@ -14,6 +14,7 @@ import { TablesPage } from "./pages/TablesPage";
 import { WaiterOrdersPage } from "./features/orders/WaiterOrdersPage";
 import { CashierOrdersPage } from "./features/orders/CashierOrdersPage";
 import { OrdersAccess } from "./features/orders/OrdersAccess";
+import { KitchenDashboard } from "./features/kitchen/KitchenDashboard";
 
 export function AppRoutes() {
   return (
@@ -42,6 +43,9 @@ export function AppRoutes() {
           </Route>
           <Route element={<OrdersAccess role="cashier" />}>
             <Route path="/orders/cashier" element={<CashierOrdersPage />} />
+          </Route>
+          <Route element={<OrdersAccess role="chef" />}>
+            <Route path="/kitchen" element={<KitchenDashboard />} />
           </Route>
           <Route element={<ProtectedRoute ownerOnly />}>
             <Route path="/staff" element={<StaffPage />} />
