@@ -2,7 +2,50 @@
 
 React + TypeScript + Vite, Tailwind CSS, and React Router. This client implements
 accounts/authentication and Phase 3 restaurant profile, menu catalogue, and
-table management. Orders, kitchen, billing, and inventory remain future work.
+table management. Phase 4 adds Waiter orders and Cashier approval; kitchen,
+billing and inventory remain future work.
+
+## Current isolated Phase 4 preview (2026-10-25)
+
+The Phase 4 review uses a new PostgreSQL database `rms_phase4_dev` on port
+55444. It never loads the old preview's environment or touches its database.
+Local-only generated credentials are in ignored
+`../.local/phase4-preview-credentials.json`; do not commit or reuse them in
+production. Login at `/login/staff` as the generated Waiter or Cashier, then
+use `/orders/waiter` or `/orders/cashier`. Owner/Manager retain administration
+and have no approval bypass. See [Phase 4 contract](../docs/PHASE_4.md).
+
+PIN update (2026-10-27): the four isolated staff accounts now use generated
+four-digit PINs in that same ignored credentials file; prior staff sessions
+must sign in again. Staff Login defaults to four digits. The explicit legacy
+six-digit option is for untransitioned accounts elsewhere; newly assigned PINs
+must be four digits. See [the transition guide](../docs/AUTHENTICATION.md#existing-six-digit-credentials-compatible-transition).
+
+If the processes are not already running, from repository-root terminals:
+
+```powershell
+.\.venv\Scripts\python.exe .local/phase4_runtime.py manage.py runserver 127.0.0.1:8004 --noreload
+```
+
+```powershell
+$env:DEV_BACKEND_URL = 'http://127.0.0.1:8004'
+cd frontend
+npm run dev -- --port 5175
+```
+
+Frontend: `http://localhost:5175/`. Readiness:
+`http://127.0.0.1:8004/api/v1/health/ready/`. These are computer-local URLs.
+The private runtime helper/config and isolated database are not shared project
+dependencies. After a machine restart, first start only this review cluster:
+
+```powershell
+& 'C:\Program Files\PostgreSQL\18\bin\pg_ctl.exe' -D '.local/phase4-postgres-f4b152b4' -l '.local/phase4-postgres-f4b152b4/server.log' -o '-h 127.0.0.1 -p 55444' -w start
+```
+
+Run that from the repository root only if 55444 is not already listening.
+Do not initialize/reseed an existing database. Other developers use their own
+PostgreSQL environment with the normal setup below. The older Phase 3 preview
+addresses later in this guide are historical and were not restarted here.
 
 ## Setup
 

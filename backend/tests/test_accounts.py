@@ -50,7 +50,7 @@ def test_owner_password_login_rotates_session_and_csrf(owner, owner_password, se
 
 def test_staff_pin_login_and_logout_revoke_session(staff, session_client):
     client = session_client()
-    response = post(client, "login/staff/", {"username": staff.username, "pin": "482759"})
+    response = post(client, "login/staff/", {"username": staff.username, "pin": "4827"})
     assert response.status_code == 200
     assert client.session.get_expiry_age() <= settings.ACCOUNTS_STAFF_SESSION_SECONDS
     key = client.session.session_key
@@ -76,7 +76,7 @@ def test_mutations_reject_missing_or_untrusted_csrf_origin(owner, owner_password
     payload = {
         "username": "new",
         "role": "waiter",
-        "pin": "739284",
+        "pin": "7392",
         "owner_password": owner_password,
     }
     assert (
@@ -96,7 +96,7 @@ def test_owner_creates_staff_with_hashed_temporary_pin(owner_client, owner_passw
         {
             "username": f"new-{role}",
             "role": role,
-            "pin": "042759",
+            "pin": "0427",
             "owner_password": owner_password,
         },
     )
@@ -105,8 +105,8 @@ def test_owner_creates_staff_with_hashed_temporary_pin(owner_client, owner_passw
     user = User.objects.get(pk=data["id"])
     assert user.role == role
     assert user.must_change_pin
-    assert user.check_pin("042759")
-    assert user.pin_hash != "042759"
+    assert user.check_pin("0427")
+    assert user.pin_hash != "0427"
     assert identify_hasher(user.pin_hash).algorithm == "argon2"
     assert not user.has_usable_password()
     assert not user.is_staff and not user.is_superuser
@@ -119,7 +119,7 @@ def test_owner_creates_staff_with_hashed_temporary_pin(owner_client, owner_passw
         "is_active",
         "must_change_pin",
     }
-    assert "042759" not in response.content.decode()
+    assert "0427" not in response.content.decode()
 
 
 @pytest.mark.parametrize(
@@ -137,7 +137,7 @@ def test_staff_creation_rejects_role_and_privilege_injection(owner_client, owner
     payload = {
         "username": "injection",
         "role": "waiter",
-        "pin": "739284",
+        "pin": "7392",
         "owner_password": owner_password,
         **extra,
     }
@@ -146,7 +146,33 @@ def test_staff_creation_rejects_role_and_privilege_injection(owner_client, owner
 
 
 @pytest.mark.parametrize(
-    "pin", ["123456", "111111", "654321", "12345", "1234567", "१२३४५६", 482759, " 482759"]
+    "pin",
+    [
+        "123456",
+        "111111",
+        "654321",
+        "12345",
+        "1234567",
+        "१२३४५६",
+        4827,
+        " 4827",
+        "0000",
+        "1111",
+        "1234",
+        "4321",
+        "0123",
+        "9876",
+        "7890",
+        "2109",
+        "१२३४",
+        "427",
+        "04270",
+        "0427 ",
+        "04a7",
+        "04.7",
+        False,
+        None,
+    ],
 )
 def test_staff_creation_rejects_invalid_or_weak_pins(owner_client, owner_password, pin):
     response = post(
@@ -168,13 +194,13 @@ def test_owner_must_reauthenticate_for_staff_writes(owner_client, staff):
         owner_client,
         f"staff/{staff.pk}/pin/reset/",
         {
-            "new_pin": "739284",
+            "new_pin": "7392",
             "owner_password": "incorrect",
         },
     )
     assert response.status_code == 401
     staff.refresh_from_db()
-    assert staff.check_pin("482759")
+    assert staff.check_pin("4827")
 
 
 @pytest.mark.parametrize("role", STAFF_ROLES)
@@ -194,7 +220,7 @@ def test_unknown_and_inactive_accounts_have_generic_login_failure(staff, session
     staff.is_active = False
     staff.save(update_fields=["is_active"])
     for username in [staff.username, "does-not-exist"]:
-        response = post(client, "login/staff/", {"username": username, "pin": "482759"})
+        response = post(client, "login/staff/", {"username": username, "pin": "4827"})
         assert response.status_code == 401
         assert response.json() == {"detail": "Invalid credentials."}
 
@@ -202,12 +228,11 @@ def test_unknown_and_inactive_accounts_have_generic_login_failure(staff, session
 def test_owner_pin_and_staff_password_login_are_not_allowed(
     owner, owner_password, staff, session_client
 ):
-    owner.set_pin("482759")
+    owner.set_pin("4827")
     owner.save(update_fields=["pin_hash"])
     client = session_client()
     assert (
-        post(client, "login/staff/", {"username": owner.username, "pin": "482759"}).status_code
-        == 401
+        post(client, "login/staff/", {"username": owner.username, "pin": "4827"}).status_code == 401
     )
     assert (
         post(
@@ -223,21 +248,21 @@ def test_temporary_pin_must_change_and_change_revokes_other_sessions(staff, sess
     current = session_client(staff)
     other = session_client(staff)
     assert current.get(PREFIX + "me/").json()["must_change_pin"] is True
-    response = post(current, "pin/change/", {"current_pin": "482759", "new_pin": "739284"})
+    response = post(current, "pin/change/", {"current_pin": "4827", "new_pin": "7392"})
     assert response.status_code == 200
     assert response.json()["must_change_pin"] is False
     assert current.get(PREFIX + "me/").status_code == 200
     assert other.get(PREFIX + "me/").status_code == 403
     staff.refresh_from_db()
-    assert staff.check_pin("739284") and not staff.check_pin("482759")
+    assert staff.check_pin("7392") and not staff.check_pin("4827")
 
 
 @pytest.mark.parametrize(
     "current,new,status",
     [
-        ("wrong", "739284", 401),
-        ("482759", "482759", 400),
-        ("482759", "111111", 400),
+        ("wrong", "7392", 401),
+        ("4827", "4827", 400),
+        ("4827", "111111", 400),
     ],
 )
 def test_pin_change_rejects_invalid_credentials_and_reuse(
@@ -248,7 +273,7 @@ def test_pin_change_rejects_invalid_credentials_and_reuse(
         post(client, "pin/change/", {"current_pin": current, "new_pin": new}).status_code == status
     )
     staff.refresh_from_db()
-    assert staff.check_pin("482759")
+    assert staff.check_pin("4827")
 
 
 def test_owner_reset_revokes_sessions_and_requires_new_pin_change(
@@ -259,7 +284,7 @@ def test_owner_reset_revokes_sessions_and_requires_new_pin_change(
         owner_client,
         f"staff/{staff.pk}/pin/reset/",
         {
-            "new_pin": "739284",
+            "new_pin": "7392",
             "owner_password": owner_password,
         },
     )
@@ -267,10 +292,9 @@ def test_owner_reset_revokes_sessions_and_requires_new_pin_change(
     assert existing.get(PREFIX + "me/").status_code == 403
     client = session_client()
     assert (
-        post(client, "login/staff/", {"username": staff.username, "pin": "482759"}).status_code
-        == 401
+        post(client, "login/staff/", {"username": staff.username, "pin": "4827"}).status_code == 401
     )
-    result = post(client, "login/staff/", {"username": staff.username, "pin": "739284"})
+    result = post(client, "login/staff/", {"username": staff.username, "pin": "7392"})
     assert result.status_code == 200 and result.json()["user"]["must_change_pin"] is True
 
 
@@ -296,7 +320,7 @@ def test_owner_cannot_be_targeted_by_staff_management(owner_client, owner, owner
         owner_client,
         f"staff/{owner.pk}/pin/reset/",
         {
-            "new_pin": "739284",
+            "new_pin": "7392",
             "owner_password": owner_password,
         },
     )
@@ -363,10 +387,10 @@ def test_unassigned_superuser_gets_no_implicit_business_role(session_client):
 
 def test_pin_hashes_are_salted_and_pepper_dependent(staff):
     other = User(username="other")
-    other.set_pin("482759")
+    other.set_pin("4827")
     assert staff.pin_hash != other.pin_hash
     with override_settings(PIN_PEPPER="different-test-only-pepper-value"):
-        assert not staff.check_pin("482759")
+        assert not staff.check_pin("4827")
 
 
 def test_only_one_owner_is_allowed_by_database(owner, owner_password):
@@ -403,13 +427,13 @@ def test_duplicate_staff_username_preserves_existing_account(owner_client, owner
         {
             "username": staff.username,
             "role": "chef",
-            "pin": "739284",
+            "pin": "7392",
             "owner_password": owner_password,
         },
     )
     assert response.status_code == 400
     staff.refresh_from_db()
-    assert staff.role == "waiter" and staff.check_pin("482759")
+    assert staff.role == "waiter" and staff.check_pin("4827")
 
 
 def test_account_admin_is_read_only_and_hides_hashes(owner):

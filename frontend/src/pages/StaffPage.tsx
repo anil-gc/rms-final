@@ -28,7 +28,8 @@ import { displayName, roleLabel, staffRoles } from "../types";
 import type { StaffRole, User } from "../types";
 
 type StaffDialog =
-  { kind: "create" } | { kind: "reset" | "state"; member: User };
+  | { kind: "create" }
+  | { kind: "reset" | "state"; member: User };
 
 function StaffMutationDialog({
   dialog,
@@ -162,7 +163,7 @@ function StaffMutationDialog({
             autoComplete="new-password"
             value={pin}
             onChange={(e) => setPin(e.target.value)}
-            hint="Six digits. Avoid repeated or sequential numbers. They must change this PIN on first sign-in."
+            hint="Exactly four digits. Avoid repeated or sequential numbers. They must change this PIN on first sign-in."
             error={action.error?.fields.pin || action.error?.fields.new_pin}
           />
         )}

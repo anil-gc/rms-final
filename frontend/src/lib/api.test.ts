@@ -39,7 +39,7 @@ describe("session API client", () => {
       first_name: "",
       last_name: "",
       role: "waiter",
-      pin: "482759",
+      pin: "4827",
       owner_password: "test-only-password",
     });
     expect(fetchMock.mock.calls[1][1].headers["X-CSRFToken"]).toBe(
@@ -65,11 +65,11 @@ describe("session API client", () => {
       .mockResolvedValueOnce(json(profile));
     vi.stubGlobal("fetch", fetchMock);
     const { api, ApiError } = await import("./api");
-    await expect(api.changePin("482759", "739284")).rejects.toBeInstanceOf(
+    await expect(api.changePin("4827", "7392")).rejects.toBeInstanceOf(
       ApiError,
     );
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    await api.changePin("482759", "739284");
+    await api.changePin("4827", "7392");
     expect(fetchMock).toHaveBeenCalledTimes(4);
     expect(fetchMock.mock.calls[3][1].headers["X-CSRFToken"]).toBe(
       "new-test-token",
@@ -94,7 +94,7 @@ describe("session API client", () => {
         ),
     );
     const { api } = await import("./api");
-    await expect(api.changePin("482759", "739284")).rejects.toMatchObject({
+    await expect(api.changePin("4827", "7392")).rejects.toMatchObject({
       status: 429,
       retryAfter: 120,
       fields: { new_pin: "Choose a different PIN." },

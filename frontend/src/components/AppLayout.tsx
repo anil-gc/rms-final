@@ -25,6 +25,12 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
     { to: "/restaurant", label: "Restaurant profile", icon: Store },
     { to: "/menu", label: "Menu catalogue", icon: Utensils },
     { to: "/tables", label: "Tables", icon: Armchair },
+    ...(user?.role === "waiter"
+      ? [{ to: "/orders/waiter", label: "Waiter orders", icon: Utensils }]
+      : []),
+    ...(user?.role === "cashier"
+      ? [{ to: "/orders/cashier", label: "Cashier approvals", icon: Utensils }]
+      : []),
     ...(user?.role === "owner"
       ? [{ to: "/staff", label: "Staff management", icon: UsersRound }]
       : []),
@@ -59,17 +65,21 @@ export function AppLayout() {
   const action = useAction();
   const location = useLocation();
   if (!user) return null;
-  const page = location.pathname.startsWith("/staff")
-    ? "Staff management"
-    : location.pathname === "/profile"
-      ? "My profile"
-      : location.pathname === "/restaurant"
-        ? "Restaurant profile"
-        : location.pathname === "/menu"
-          ? "Menu catalogue"
-          : location.pathname === "/tables"
-            ? "Tables"
-            : "Overview";
+  const page = location.pathname.startsWith("/orders/waiter")
+    ? "Waiter orders"
+    : location.pathname.startsWith("/orders/cashier")
+      ? "Cashier approvals"
+      : location.pathname.startsWith("/staff")
+        ? "Staff management"
+        : location.pathname === "/profile"
+          ? "My profile"
+          : location.pathname === "/restaurant"
+            ? "Restaurant profile"
+            : location.pathname === "/menu"
+              ? "Menu catalogue"
+              : location.pathname === "/tables"
+                ? "Tables"
+                : "Overview";
   const date = new Intl.DateTimeFormat("en-GB", {
     day: "numeric",
     month: "short",

@@ -24,6 +24,7 @@ export function LoginPage({ kind }: { kind: "owner" | "staff" }) {
   const { user, status, loginOwner, loginStaff } = useAuth();
   const [username, setUsername] = useState("");
   const [secret, setSecret] = useState("");
+  const [legacyPin, setLegacyPin] = useState(false);
   const action = useAction();
   const navigate = useNavigate();
   const location = useLocation();
@@ -151,9 +152,12 @@ export function LoginPage({ kind }: { kind: "owner" | "staff" }) {
               placeholder={
                 kind === "owner"
                   ? "Enter your password"
-                  : "Enter your 6-digit PIN"
+                  : legacyPin
+                    ? "Enter your existing 6-digit PIN"
+                    : "Enter your 4-digit PIN"
               }
               pin={kind === "staff"}
+              pinLength={legacyPin ? 6 : 4}
               value={secret}
               onChange={(e) => setSecret(e.target.value)}
               error={
@@ -161,6 +165,19 @@ export function LoginPage({ kind }: { kind: "owner" | "staff" }) {
               }
               required
             />
+            {kind === "staff" && (
+              <label className="field-hint">
+                <input
+                  type="checkbox"
+                  checked={legacyPin}
+                  onChange={(event) => {
+                    setLegacyPin(event.target.checked);
+                    setSecret("");
+                  }}
+                />{" "}
+                I still use an existing 6-digit PIN
+              </label>
+            )}
             <Button
               type="submit"
               className="w-full login-submit"

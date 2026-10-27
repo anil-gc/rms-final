@@ -96,12 +96,14 @@ export function SecretField({
   hint,
   error,
   pin = false,
+  pinLength = 4,
   ...props
 }: InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   hint?: string;
   error?: string;
   pin?: boolean;
+  pinLength?: 4 | 6;
 }) {
   const [visible, setVisible] = useState(false);
   const id = useId();
@@ -115,8 +117,9 @@ export function SecretField({
           className={`input ${pin ? "pin-input" : ""}`}
           type={visible ? "text" : "password"}
           inputMode={pin ? "numeric" : undefined}
-          maxLength={pin ? 6 : 1024}
-          pattern={pin ? "[0-9]{6}" : undefined}
+          maxLength={pin ? pinLength : 1024}
+          minLength={pin ? pinLength : props.minLength}
+          pattern={pin ? `[0-9]{${pinLength}}` : undefined}
           aria-invalid={!!error || undefined}
           aria-describedby={
             error ? `${id}-error` : hint ? `${id}-hint` : undefined

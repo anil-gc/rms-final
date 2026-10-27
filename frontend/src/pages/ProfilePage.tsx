@@ -32,6 +32,7 @@ export function CredentialForm({
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [success, setSuccess] = useState(false);
+  const [legacyPin, setLegacyPin] = useState(false);
   const action = useAction();
   if (!user) return null;
   const owner = user.role === "owner";
@@ -54,6 +55,7 @@ export function CredentialForm({
     setNext("");
     setConfirm("");
     if (profile) {
+      setLegacyPin(false);
       updateUser(profile);
       setSuccess(true);
       onComplete?.();
@@ -78,25 +80,39 @@ export function CredentialForm({
         }
         name={owner ? "current_password" : "current_pin"}
         pin={!owner}
+        pinLength={legacyPin ? 6 : 4}
         required
         autoComplete="current-password"
         value={current}
         onChange={(e) => setCurrent(e.target.value)}
         error={action.error?.fields[owner ? "current_password" : "current_pin"]}
       />
+      {!owner && (
+        <label className="field-hint">
+          <input
+            type="checkbox"
+            checked={legacyPin}
+            onChange={(event) => {
+              setLegacyPin(event.target.checked);
+              setCurrent("");
+            }}
+          />{" "}
+          My current or temporary PIN still has 6 digits
+        </label>
+      )}
       <SecretField
         label={owner ? "New password" : "New PIN"}
         name={owner ? "new_password" : "new_pin"}
         pin={!owner}
         required
         autoComplete="new-password"
-        minLength={owner ? 15 : 6}
+        minLength={owner ? 15 : 4}
         value={next}
         onChange={(e) => setNext(e.target.value)}
         hint={
           owner
             ? "At least 15 characters. Choose a unique password you don’t use elsewhere."
-            : "Six digits, different from your current PIN. Avoid obvious sequences or repeated numbers."
+            : "Exactly four digits, different from your current PIN. Avoid obvious sequences or repeated numbers."
         }
         error={action.error?.fields[owner ? "new_password" : "new_pin"]}
       />
@@ -106,7 +122,7 @@ export function CredentialForm({
         pin={!owner}
         required
         autoComplete="new-password"
-        minLength={owner ? 15 : 6}
+        minLength={owner ? 15 : 4}
         value={confirm}
         onChange={(e) => setConfirm(e.target.value)}
       />

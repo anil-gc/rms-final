@@ -1,4 +1,5 @@
 from django.db import IntegrityError, transaction
+from django.db.models import Exists, OuterRef
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
@@ -89,7 +90,14 @@ class DiningTableViewSet(WorkspaceModelViewSet):
     serializer_class = DiningTableSerializer
 
     def get_queryset(self):
+        from apps.orders.models import DiningSession
+
         queryset = super().get_queryset()
+        queryset = queryset.annotate(
+            has_active_session=Exists(
+                DiningSession.objects.filter(table_id=OuterRef("pk"), state="open")
+            )
+        )
         return queryset if can_manage(self.request.user) else queryset.filter(is_active=True)
 
     def perform_create(self, serializer):

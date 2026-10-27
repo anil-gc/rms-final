@@ -57,10 +57,20 @@ class RestaurantSerializer(StrictModelSerializer):
 
 
 class DiningTableSerializer(StrictModelSerializer):
+    has_active_session = serializers.BooleanField(read_only=True, default=False)
+
     class Meta:
         model = DiningTable
-        fields = ["id", "name", "capacity", "status", "is_active", "updated_at"]
-        read_only_fields = ["id", "updated_at"]
+        fields = [
+            "id",
+            "name",
+            "capacity",
+            "status",
+            "is_active",
+            "updated_at",
+            "has_active_session",
+        ]
+        read_only_fields = ["id", "updated_at", "has_active_session"]
 
     def validate_name(self, value):
         query = DiningTable.objects.filter(name__iexact=value)
@@ -75,6 +85,16 @@ class DiningTableSerializer(StrictModelSerializer):
     def validate(self, attrs):
         active = attrs.get("is_active", getattr(self.instance, "is_active", True))
         status = attrs.get("status", getattr(self.instance, "status", DiningTable.Status.AVAILABLE))
+        if self.instance and (not active or status != DiningTable.Status.OCCUPIED):
+            from apps.orders.models import DiningSession
+
+            if DiningSession.objects.filter(table=self.instance, state="open").exists():
+                raise serializers.ValidationError(
+                    {
+                        "status": "An active dining session keeps this table occupied "
+                        "until billing closes it."
+                    }
+                )
         if not active and status != DiningTable.Status.AVAILABLE:
             raise serializers.ValidationError(
                 {

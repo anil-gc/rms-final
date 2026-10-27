@@ -16,13 +16,15 @@ class LoginRateLimited(Exception):
     wait: int
 
 
-def consume_credential_attempt(username, address, *, scope="login"):
+def consume_credential_attempt(username, address, *, scope="login", pin=False):
     """Reserve an attempt before hashing; PostgreSQL locks prevent lost updates."""
     now = timezone.now()
     budgets = [
         (
             f"{scope}:account:{username.casefold()}",
-            settings.ACCOUNTS_LOGIN_ACCOUNT_LIMIT,
+            min(settings.ACCOUNTS_LOGIN_ACCOUNT_LIMIT, settings.ACCOUNTS_PIN_ACCOUNT_LIMIT)
+            if pin or scope == "pin-change"
+            else settings.ACCOUNTS_LOGIN_ACCOUNT_LIMIT,
             settings.ACCOUNTS_LOGIN_ACCOUNT_WINDOW_SECONDS,
         ),
         (

@@ -330,7 +330,10 @@ Add tests under `backend/tests/`, create migrations with
 
 ## Recommended next phase
 
-Review Phase 2 first. After explicit approval, Phase 3 can add a single
-restaurant profile, menu catalogue, and tables. Do not add branches, tenancy,
-subscriptions, memberships, a frontend, or later-phase workflows. Publishing
-or merging also requires explicit approval.
+Phases 1-4 are implemented locally, including the React interface and
+Waiter/Cashier ordering. See [Phase 4 API/services/migrations](../docs/PHASE_4.md)
+and [current verification](../docs/PROJECT_STATUS.md). Future Phase 5 may
+consume the approved-lines service after separate approval; no preparation,
+payment or settlement endpoint exists yet. Publishing or merging requires
+explicit approval. Use the isolated Phase 4 preview instructions in the
+[frontend guide](../frontend/README.md); do not migrate the old preview DB.

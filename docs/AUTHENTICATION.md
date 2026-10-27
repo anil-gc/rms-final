@@ -1,4 +1,4 @@
-# Phase 2 authentication contract
+# Authentication contract (four-digit staff PIN update, 2026-10-27)
 
 Base path: `/api/v1/accounts/`. JSON only. All credentials are strings. No
 public registration, Owner-creation endpoint, JWT, bearer-token, or membership
@@ -21,10 +21,58 @@ existing user. The Owner is a Django staff user for read-only account admin,
 not a superuser. Trusted local operator recovery uses `changepassword`.
 
 Owner creates staff through the API and communicates a temporary PIN privately.
-Choose six ASCII digits without obvious repeated/sequential patterns. The API
+Choose exactly four ASCII digits, including any leading zeros, without
+repeated or sequential patterns (`0000`, `1111`, `1234`, `4321` and cyclic
+sequences are rejected). PINs must be JSON strings, never numbers. The API
 stores a salted Argon2 hash of the HMAC-peppered PIN and an unusable password.
 The new account must change its temporary PIN before using normal protected
 APIs. Owner reset has the same forced-change behavior.
+
+## Existing six-digit credentials: compatible transition
+
+Every newly assigned credential (staff creation, Owner reset and self-service
+PIN change) must be exactly four digits. Existing hashes cannot reveal PIN
+length. They are not truncated, rehashed on sign-in, bulk-reset or marked for
+forced change by this code update. Existing sessions and staff IDs remain valid.
+
+Staff Login defaults to four digits and offers **I still use an existing
+6-digit PIN** for an account that has not transitioned. The profile and
+temporary-PIN form offer the same explicit choice for the *current* PIN;
+their new/confirmation fields always require four digits. Toggling length
+clears input rather than truncating it. Both input paths submit the full string
+to the existing rate-limited verifier. A legacy credential succeeds only when
+its complete original hash verifies; this does not permit assigning new
+six-digit PINs.
+
+Safe transition options:
+
+1. Staff sign in with their unchanged six-digit PIN, open My profile, select
+   the six-digit current-PIN option, and choose a different four-digit PIN.
+   The current session is kept; all their other sessions are invalidated.
+2. Owner resets that account to a privately communicated four-digit temporary
+   PIN using password confirmation. Existing sessions are invalidated and staff
+   must choose a different four-digit PIN before normal APIs become available.
+   This also handles forgotten legacy PINs.
+
+No automatic cutoff is imposed. Operators must track completed resets/changes
+before a separately approved removal of legacy verification; do not infer
+length from Argon2 hashes or try to guess every account's PIN. The login and
+current-PIN APIs retain bounded string input and generic credential-error
+behavior; numeric JSON values are rejected. New PIN fields have strict
+four-digit validation in both serializers and `User.set_pin()`.
+
+There is **no schema or data migration** for this change. The pepper, HMAC
+derivation, Argon2 hashing, user model, session hash, roles and CSRF contract
+remain intact. Only explicitly changed credentials receive a new hash through
+the normal credential lifecycle.
+
+The four known staff accounts in the isolated Phase 4 preview were transitioned
+on 2026-10-27 through the normal PIN-change API. Generated four-digit values
+are in ignored `.local/phase4-preview-credentials.json`, never source/Git.
+Owner credentials, user IDs and menu/table/order/audit records were checked
+for preservation. The older preview database/environment was not opened or
+modified. Existing Phase 4 staff browser sessions must sign in again because
+their preview PINs were explicitly changed.
 
 ## Client sequence
 
@@ -100,11 +148,16 @@ privilege flags or restaurant IDs, are rejected rather than ignored.
 - 404: staff target not found, including Owner IDs on staff-management routes.
 - 429: shared login/credential attempt budget exhausted; honor `Retry-After`.
 
-Defaults: five failed/in-flight checks per case-insensitive username per 15
-minutes, plus 30 total checks per source IP per minute. Correct credentials
+Defaults: **three failed/in-flight PIN checks** per case-insensitive username
+per 15 minutes (`ACCOUNTS_PIN_ACCOUNT_LIMIT=3`); Owner passwords retain five.
+A lower shared account limit also applies to PINs. Both credential types use
+the same account bucket, so another route cannot clear prior failures or
+produce a fresh identity budget. There are also 30 total checks per source IP
+per minute. Correct credentials
 refund only that account attempt; existing failures stay counted. IP attempts
 are never refunded. Password confirmation shares the login budget. Current-PIN
-changes use a separate account/IP scope with the same limits. Login budgets
+changes use a separate account/IP scope with the stricter three-attempt PIN
+cap. Login budgets
 protect Django admin too; admin displays its normal generic failed-login form
 when blocked rather than issuing API JSON.
 
@@ -114,6 +167,16 @@ changes refund only their account attempt and invalidate other sessions using
 Django's standard password/session handling. Staff and PIN management in the
 account-record admin remains read-only. Active login limits still apply after
 an Owner resets a staff PIN; honor the remaining cooldown.
+
+Four-digit PINs have at most 10,000 combinations, 100 times fewer than six-digit
+PINs. The stricter cap is this application's tradeoff between guessing resistance
+and temporary denial of service; it is not a guarantee against sustained attacks
+or a claim of password/MFA compliance. Keep account-based admission across
+workers/IPs, timed cooldowns, Retry-After and generic errors. Successful login
+never clears earlier failures. Production still requires HTTPS and appropriate
+network/edge access controls. This review follows [OWASP's account-based login
+throttling guidance](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html#login-throttling);
+OWASP does not prescribe this project's exact three-attempt setting.
 
 Malformed inputs/CSRF failures do not reach credential hashing. Requests never
 trust `X-Forwarded-For`; the deployment must supply trustworthy `REMOTE_ADDR`.

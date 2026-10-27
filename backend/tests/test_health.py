@@ -34,7 +34,7 @@ def test_readiness_failure_returns_generic_503(api_client, caplog):
     assert private_detail not in caplog.text
 
 
-@pytest.mark.parametrize("path", ["/api/health/", "/api/v2/health/", "/api/v1/orders/"])
+@pytest.mark.parametrize("path", ["/api/health/", "/api/v2/health/", "/api/v1/kitchen/"])
 def test_only_declared_v1_routes_exist(api_client, path):
     assert api_client.get(path).status_code == 404
 

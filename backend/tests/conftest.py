@@ -28,7 +28,7 @@ def staff(db):
     from apps.accounts.models import User
 
     user = User.objects.create_user(username="waiter-test", role=User.Role.WAITER)
-    user.set_pin("482759")
+    user.set_pin("4827")
     user.save(update_fields=["pin_hash"])
     return user
 
