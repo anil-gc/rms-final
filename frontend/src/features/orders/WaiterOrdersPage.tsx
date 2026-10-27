@@ -11,6 +11,7 @@ import { minorUnits, money, orderApi } from "./api";
 import type { OrderDetail, Submission } from "./api";
 import { BatchCard } from "./BatchCard";
 import "./orders.css";
+import { ReadyItemsList } from "../kitchen/ReadyItemsList";
 
 function restoreAttempt(key: string): Submission | null {
   try {
@@ -413,6 +414,7 @@ export function WaiterOrdersPage() {
         error={tables.error}
         retry={() => void tables.load()}
       />
+      <ReadyItemsList />
       {!tables.loading && !tables.error && !tables.data?.length && (
         <Notice kind="info">
           No active tables. Ask management to configure tables first.
