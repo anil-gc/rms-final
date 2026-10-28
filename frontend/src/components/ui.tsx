@@ -294,3 +294,23 @@ export function Dialog({
     </dialog>
   );
 }
+
+export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input {...props} className={`input ${props.className || ''}`} />
+  );
+}
+
+export function Alert({ title, children, kind = "info" }: { title?: string, children: React.ReactNode, kind?: "error" | "info" | "success" | "warning" }) {
+  return (
+    <div className={`notice notice-${kind}`} role={kind === "error" ? "alert" : "status"}>
+      {title && <h3 className="font-bold">{title}</h3>}
+      <div>{children}</div>
+    </div>
+  );
+}
+
+export function Spinner({ size = "normal" }: { size?: "small" | "normal" | "lg" }) {
+  const pixelSize = size === "small" ? 12 : size === "lg" ? 24 : 16;
+  return <LoaderCircle className="animate-spin text-green" size={pixelSize} />;
+}

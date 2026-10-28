@@ -16,10 +16,14 @@ const ticketsMock = vi.fn().mockResolvedValue([
 
 vi.mock("./api", () => ({
   kitchenApi: {
-    tickets: (...args) => ticketsMock(...args),
-    markPreparing: (...args) => markPreparingMock(...args),
-    markReady: (...args) => markReadyMock(...args),
-    markServed: (...args) => markServedMock(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tickets: (...args: any[]) => ticketsMock(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    markPreparing: (...args: any[]) => markPreparingMock(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    markReady: (...args: any[]) => markReadyMock(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    markServed: (...args: any[]) => markServedMock(...args),
   }
 }));
 

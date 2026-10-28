@@ -15,6 +15,8 @@ import { WaiterOrdersPage } from "./features/orders/WaiterOrdersPage";
 import { CashierOrdersPage } from "./features/orders/CashierOrdersPage";
 import { OrdersAccess } from "./features/orders/OrdersAccess";
 import { KitchenDashboard } from "./features/kitchen/KitchenDashboard";
+import { BillingDashboard } from "./features/billing/BillingDashboard";
+import { BillDetailPage } from "./features/billing/BillDetailPage";
 
 export function AppRoutes() {
   return (
@@ -43,6 +45,8 @@ export function AppRoutes() {
           </Route>
           <Route element={<OrdersAccess role="cashier" />}>
             <Route path="/orders/cashier" element={<CashierOrdersPage />} />
+            <Route path="/billing" element={<BillingDashboard />} />
+            <Route path="/billing/:session_id" element={<BillDetailPage />} />
           </Route>
           <Route element={<OrdersAccess role="chef" />}>
             <Route path="/kitchen" element={<KitchenDashboard />} />

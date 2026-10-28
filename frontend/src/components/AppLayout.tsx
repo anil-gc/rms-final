@@ -12,6 +12,7 @@ import {
   Store,
   Utensils,
   Armchair,
+  ReceiptText,
 } from "lucide-react";
 import { useAuth } from "../auth/auth-context";
 import { displayName, roleLabel } from "../types";
@@ -29,7 +30,10 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
       ? [{ to: "/orders/waiter", label: "Waiter orders", icon: Utensils }]
       : []),
     ...(user?.role === "cashier"
-      ? [{ to: "/orders/cashier", label: "Cashier approvals", icon: Utensils }]
+      ? [
+          { to: "/orders/cashier", label: "Cashier approvals", icon: Utensils },
+          { to: "/billing", label: "Billing", icon: ReceiptText },
+        ]
       : []),
     ...(user?.role === "owner"
       ? [{ to: "/staff", label: "Staff management", icon: UsersRound }]
@@ -69,8 +73,10 @@ export function AppLayout() {
     ? "Waiter orders"
     : location.pathname.startsWith("/orders/cashier")
       ? "Cashier approvals"
-      : location.pathname.startsWith("/staff")
-        ? "Staff management"
+      : location.pathname.startsWith("/billing")
+        ? "Billing"
+        : location.pathname.startsWith("/staff")
+          ? "Staff management"
         : location.pathname === "/profile"
           ? "My profile"
           : location.pathname === "/restaurant"

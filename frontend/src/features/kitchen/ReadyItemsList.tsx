@@ -14,8 +14,8 @@ export function ReadyItemsList() {
       setError(null);
       const data = await kitchenApi.tickets("ready");
       setTickets(data);
-    } catch (err: any) {
-      setError(err.message || "Failed to load ready items.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load ready items.");
     } finally {
       setLoading(false);
     }
