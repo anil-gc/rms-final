@@ -59,8 +59,8 @@ export function KitchenDashboard() {
       setError(null);
       const data = await kitchenApi.tickets(filter);
       setTickets(data);
-    } catch (err: any) {
-      setError(err.message || "Failed to load tickets.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load tickets.");
     } finally {
       setLoading(false);
     }
@@ -68,6 +68,7 @@ export function KitchenDashboard() {
 
   useEffect(() => {
     fetchTickets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   const action = useAction();
