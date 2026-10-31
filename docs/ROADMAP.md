@@ -115,7 +115,7 @@ do not represent a manual table-status edit as a paid/closed order.
   requirements need separate current verification before implementation. Plan
   80mm printing, safe reprints and printable PDF from one immutable bill snapshot.
   See [printer research and selection criteria](ARCHITECTURE.md#phase-6-receipts-and-local-printing-planned).
-- **Phase 7:** Owner/Manager stock intake, consumption, adjustments and movement
+- **Phase 7 (Completed):** Owner/Manager stock intake, consumption, adjustments and movement
   history with explicit units, negative-stock policy, transaction constraints
   and audited reasons. Do not silently equate menu availability with stock.
 - **Phase 8:** Separate `rooms` app for rooms, availability, reservations,

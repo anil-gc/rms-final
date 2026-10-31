@@ -28,7 +28,7 @@ settlement, payments and room operations were not implemented in Phase 4.
 | `orders` | Dining sessions, orders, immutable submissions, audit and Cashier approval | Phase 4 |
 | `kitchen` | One Chef's preparation/ready status in Phase 5 | Skeleton |
 | `billing` | Invoices, payment records, cashier printing in Phase 6 | Skeleton |
-| `inventory` | Stock and movements in Phase 7 | Skeleton |
+| `inventory` | Stock and movements in Phase 7 | Implemented |
 | `rooms` | Optional hotel rooms, reservations, stays and folios in Phase 8 | Planned; app absent |
 | `room_ordering` | Hotel-room QR credentials, guest sessions and intake in Phase 9 | Planned; app absent |
 
