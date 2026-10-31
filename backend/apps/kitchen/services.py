@@ -62,6 +62,10 @@ def mark_served(*, order_line_id, actor):
     if ticket.status != KitchenTicket.Status.READY:
         raise ValidationError({"detail": "Item must be ready before it can be served."})
 
+    # Phase 7: Atomically deduct inventory for tracked recipes
+    from apps.inventory.services import process_recipe_consumption
+    process_recipe_consumption(line)
+
     ticket.status = KitchenTicket.Status.SERVED
     ticket.save(update_fields=["status", "updated_at"])
 
